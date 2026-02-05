@@ -4,6 +4,34 @@ from .models import Order, OrderItem
 from inventory.models import Inventory
 
 
+# ---------- READ SERIALIZERS ----------
+
+class OrderItemSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source="product.name", read_only=True)
+
+    class Meta:
+        model = OrderItem
+        fields = ("id", "product", "product_name", "quantity", "price")
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    items = OrderItemSerializer(many=True, read_only=True)
+    user = serializers.CharField(source="user.username", read_only=True)
+
+    class Meta:
+        model = Order
+        fields = (
+            "id",
+            "user",
+            "status",
+            "total",
+            "items",
+            "created_at",
+        )
+
+
+# ---------- WRITE SERIALIZERS ----------
+
 class OrderItemCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderItem
@@ -23,7 +51,6 @@ class OrderCreateSerializer(serializers.ModelSerializer):
 
         with transaction.atomic():
             order = Order.objects.create(user=request.user)
-
             total = 0
 
             for item in items_data:
@@ -51,7 +78,7 @@ class OrderCreateSerializer(serializers.ModelSerializer):
 
                 total += order_item.price * quantity
 
-            order.total_price = total
+            order.total = total
             order.save()
 
         return order
