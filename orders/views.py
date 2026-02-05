@@ -7,7 +7,13 @@ class OrderViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Order.objects.filter(user=self.request.user).prefetch_related("items")
+        user = self.request.user
+
+        if user.groups.filter(name="ADMIN").exists():
+            return Order.objects.all().prefetch_related("items")
+
+        return Order.objects.filter(user=user).prefetch_related("items")
+
 
     def get_serializer_class(self):
         if self.action == "create":
